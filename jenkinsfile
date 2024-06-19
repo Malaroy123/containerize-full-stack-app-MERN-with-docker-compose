@@ -1,0 +1,79 @@
+pipeline {
+    agent any
+
+    environment {
+        //Define custom build IDs for each image
+        FRONTEND_BUILD_ID = "frontend-${env.BUILD_NUMBER}"
+        BACKEND_BUILD_ID = "backend-${env.BUILD_NUMBER}"
+        MONGO_BUILD_ID = "mongo-${env.BUILD_NUMBER}"
+    }
+
+    stages {
+        stage('Build Frontend Docker Image') {
+            steps {
+                script {
+                    frontendImage = docker.build("frontend-image:${env.FRONTEND_BUILD_ID}", './frontend')
+                }
+            }
+        }
+        stage('Build Backend Docker Image') {
+            steps {
+                script {
+                    backendImage = docker.build("backend-image:${env.BACKEND_BUILD_ID}", './backend')
+                }
+            }
+        }
+        stage('Build MongoDB Docker Image') {
+            steps {
+                script {
+                    mongoImage = docker.build("mongo-image:${env.MONGO_BUILD_ID}", './mongo')
+                }
+            }
+        }
+        stage('Scan Frontend Image with Trivy') {
+            steps {
+                script {
+                    frontendImage.inside {
+                        sh 'trivy image --severity HIGH,CRITICAL frontend-image:${env.FRONTEND_BUILD_ID}'
+                    }
+                }
+            }
+        }
+        stage('Scan Backend Image with Trivy') {
+            steps {
+                script {
+                    backendImage.inside {
+                        sh 'trivy image --severity HIGH,CRITICAL backend-image:${env.BACKEND_BUILD_ID}'
+                    }
+                }
+            }
+        }
+        stage('Scan MongoDB Image with Trivy') {
+            steps {
+                script {
+                    mongoImage.inside {
+                        sh 'trivy image --severity HIGH,CRITICAL mongo-image:${env.MONGO_BUILD_ID}'
+                    }
+                }
+            }
+        }
+        stage('Deploy') {
+            steps {
+                sh 'echo "Deploying..."'
+                sh 'docker-compose up -d'
+            }
+        }
+        post {
+            always {
+                // Archieve Trivy scan results and test reports
+                archiveArtifacts artifacts: '**/trivy_results.json', allowEmptyArchive: true
+            }
+            failure {
+                // Notify on failure
+                mail to: 'sqrt0fmal@gmail.com',
+                    subject: "Build Failed: ${env.JOB_NAME} ${env.BUILD_NUMBER}",
+                    BODY: "Something went wrong with ${env.JOB_NAME} , build ${env.BUILD_NUMBER}. Please check the Jenkins console output for more details."
+            }
+        }
+    }
+}

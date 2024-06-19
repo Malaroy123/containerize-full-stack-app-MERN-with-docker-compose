@@ -1,29 +1,29 @@
-# Stage-1 & spacify a name 'builder'
-FROM  node:latest AS builder
+# Stage-1 & specify a name 'builder'
+FROM node:latest AS builder
 
-# Create a directory  and go to directory 
+#Create a directory and go to the directory
 WORKDIR /app
 
-# Copy the package.json file to my current directory for install necessary dependence  
+#Copy the package.json file to my current directory to install the necessary dependency
 COPY package.json .
 
-# Install the dependence
+# Install the dependency
 RUN npm install
 
-# Copy other file to my current directory
+#Copy other files to my current directory
 COPY . .
 
-# Build optimise static file
+# Build and optimize static fil
 RUN npm run build
 
-# Stage-2
+#Stage-2
 FROM nginx:1.25.2-alpine-slim
 
-# Copy static file to my nignx folder for serve static contain
-COPY --from=builder /app/build /usr/share/nginx/html
+# Copy the static file to my Nginx folder to serve static contain
+COPY  --from=builder /app/build /usr/share/nginx/html
 
-# Open the port for react
+# Open the port to react
 EXPOSE 80
 
-# Run nginx in foreground
+# Run nginx in the foreground
 CMD ["nginx", "-g", "daemon off;"]
