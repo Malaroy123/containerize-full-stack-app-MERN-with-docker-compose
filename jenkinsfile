@@ -63,17 +63,17 @@ pipeline {
                 sh 'docker-compose up -d'
             }
         }
-        post {
-            always {
-                // Archieve Trivy scan results and test reports
-                archiveArtifacts artifacts: '**/trivy_results.json', allowEmptyArchive: true
-            }
-            failure {
-                // Notify on failure
-                mail to: 'sqrt0fmal@gmail.com',
-                    subject: "Build Failed: ${env.JOB_NAME} ${env.BUILD_NUMBER}",
-                    BODY: "Something went wrong with ${env.JOB_NAME} , build ${env.BUILD_NUMBER}. Please check the Jenkins console output for more details."
-            }
+    post {
+        always {
+            // Archieve Trivy scan results and test reports
+            archiveArtifacts artifacts: '**/trivy_results.json', allowEmptyArchive: true
         }
+        failure {
+            // Notify on failure
+            mail to: 'sqrt0fmal@gmail.com',
+                subject: "Build Failed: ${env.JOB_NAME} ${env.BUILD_NUMBER}",
+                BODY: "Something went wrong with ${env.JOB_NAME} , build ${env.BUILD_NUMBER}. Please check the Jenkins console output for more details."
+        }
+    }
     }
 }
